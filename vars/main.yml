@@ -1,0 +1,86 @@
+---
+# Copyright 2021, Dmitriy Rabotyagov <noonedeadpunk@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+_freezer_api_is_first_play_host: >-
+  {{
+    (freezer_services['freezer-api']['group'] in group_names and
+      inventory_hostname == (groups[freezer_services['freezer-api']['group']] |select('in', ansible_play_hosts)) | first) | bool
+  }}
+
+freezer_devel_distro_packages: |-
+  {% set packages = [] %}
+  {% if freezer_services['freezer-api']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-api']['group']] %}
+  {% set _ = packages.extend(freezer_api_devel_distro_packages) %}
+  {% endif %}
+  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
+  {% set _ = packages.extend(freezer_scheduler_devel_distro_packages) %}
+  {% endif %}
+  {{ packages }}
+
+freezer_install_distro_packages: |-
+  {% set packages = [] %}
+  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
+  {% set _ = packages.extend(freezer_scheduler_distro_packages) %}
+  {% endif %}
+  {{ packages }}
+
+freezer_pip_packages: |-
+  {% set packages = [] %}
+  {% if freezer_services['freezer-api']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-api']['group']] %}
+  {% set _ = packages.extend(freezer_api_pip_packages) %}
+  {% endif %}
+  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
+  {% set _ = packages.extend(freezer_scheduler_pip_packages) %}
+  {% endif %}
+  {{ packages }}
+
+filtered_freezer_services: |-
+  {% set services = [] %}
+  {% for key, value in freezer_services.items() %}
+  {%   if (value['group'] in group_names) and
+          (('condition' not in value) or
+           ('condition' in value and value['condition'])) and
+            not ('wsgi_app' in value and value['wsgi_app']) %}
+  {%     set _ = value.update({'service_key': key}) %}
+  {%     set _ = services.append(value) %}
+  {%   endif %}
+  {% endfor %}
+  {{ services }}
+
+uwsgi_freezer_services: |-
+  {% set services = {} %}
+  {% for key, value in freezer_services.items() %}
+  {%   if (value['group'] in group_names) and
+         (('condition' not in value) or ('condition' in value and value['condition']))
+         and ('wsgi_app' in value and value['wsgi_app']) %}
+  {%     set _ = value.update(
+           {
+             'wsgi_venv': freezer_bin | dirname,
+             'uwsgi_uid': freezer_system_user_name,
+             'uwsgi_guid': freezer_system_group_name,
+             'uwsgi_processes': freezer_wsgi_processes,
+             'uwsgi_threads': freezer_wsgi_threads,
+           }
+         ) %}
+  {%     set _ = services.update({key: value}) %}
+  {%   endif %}
+  {% endfor %}
+  {{ services }}
+
+_freezer_api_core_files:
+  - tmp_f: "/tmp/freezer-paste.ini"
+    target_f: "{{ freezer_etc_dir }}/freezer-paste.ini"
+    config_overrides: "{{ freezer_paste_ini_overrides }}"
+    config_type: "ini"

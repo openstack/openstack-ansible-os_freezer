@@ -1,10 +1,21 @@
-This project is no longer maintained.
+=========================
+OpenStack-Ansible Freezer
+=========================
 
-The contents of this repository are still available in the Git
-source code management system.  To see the contents of this
-repository before it reached its end of life, please check out the
-previous commit with "git checkout HEAD^1".
+This Ansible role installs and configures OpenStack Freezer API
+and client side services - scheduler and agent.
 
-For any further questions, please email
-openstack-dev@lists.openstack.org or join #openstack-dev on
-Freenode.
+Documentation for the project can be found at:
+  https://docs.openstack.org/openstack-ansible-os_freezer/latest/
+
+Release notes for the project can be found at:
+  https://docs.openstack.org/releasenotes/openstack-ansible-os_freezer/
+
+The project source code repository is located at:
+  https://opendev.org/openstack/openstack-ansible-os_freezer/
+
+The project home is at:
+  https://launchpad.net/openstack-ansible
+
+The project bug tracker is located at:
+  https://bugs.launchpad.net/openstack-ansible

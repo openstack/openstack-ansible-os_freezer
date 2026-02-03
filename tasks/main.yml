@@ -1,0 +1,153 @@
+---
+# Copyright 2021, Dmitriy Rabotyagov <noonedeadpunk@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Gather variables for each operating system
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}-{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}-{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}-{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags:
+    - always
+
+- name: Including osa.db_setup role
+  ansible.builtin.include_role:
+    name: openstack.osa.db_setup
+    apply:
+      tags:
+        - common-db
+        - freezer-config
+  vars:
+    _oslodb_setup_host: "{{ freezer_galera_setup_host }}"
+    _oslodb_ansible_python_interpreter: "{{ freezer_galera_setup_python_interpreter }}"
+    _oslodb_setup_endpoint: "{{ freezer_galera_address }}"
+    _oslodb_setup_port: "{{ freezer_galera_port }}"
+    _oslodb_databases:
+      - name: "{{ freezer_galera_database }}"
+        users:
+          - username: "{{ freezer_galera_user }}"
+            password: "{{ freezer_galera_password }}"
+  tags:
+    - common-db
+    - freezer-config
+
+- name: Importing freezer_pre_install tasks
+  ansible.builtin.import_tasks: freezer_pre_install.yml
+  tags:
+    - freezer-install
+
+- name: Importing freezer_install tasks
+  ansible.builtin.import_tasks: freezer_install.yml
+  tags:
+    - freezer-install
+
+- name: Include uWSGI role
+  ansible.builtin.import_role:
+    name: uwsgi
+  vars:
+    uwsgi_services: "{{ uwsgi_freezer_services }}"
+    uwsgi_install_method: "source"
+  when:
+    - uwsgi_freezer_services | length > 0
+  tags:
+    - freezer-install
+    - freezer-config
+    - uwsgi
+
+- name: Importing freezer_post_install tasks
+  ansible.builtin.import_tasks: freezer_post_install.yml
+  tags:
+    - freezer-config
+
+- name: Run the systemd service role
+  ansible.builtin.include_role:
+    name: systemd_service
+  vars:
+    systemd_user_name: "{{ freezer_system_user_name }}"
+    systemd_group_name: "{{ freezer_system_group_name }}"
+    systemd_tempd_prefix: openstack
+    systemd_slice_name: freezer
+    systemd_services:
+      - service_name: "{{ service_var.service_name }}"
+        enabled: "{{ service_var.enabled | default(true) }}"
+        state: "{{ service_var.enabled | default(true) | ternary('started', 'stopped') }}"
+        execstarts: "{{ service_var.execstarts }}"
+        execreloads: "{{ service_var.execreloads | default([]) }}"
+        config_overrides: "{{ service_var.init_config_overrides }}"
+  with_items: "{{ filtered_freezer_services }}"
+  loop_control:
+    loop_var: service_var
+  tags:
+    - freezer-config
+    - systemd-service
+
+- name: Including osa.service_setup role
+  ansible.builtin.include_role:
+    name: openstack.osa.service_setup
+    apply:
+      tags:
+        - common-service
+        - freezer-config
+  vars:
+    _service_adminuri_insecure: "{{ keystone_service_adminuri_insecure }}"
+    _service_in_ldap: "{{ freezer_service_in_ldap }}"
+    _service_setup_host: "{{ freezer_service_setup_host }}"
+    _service_setup_host_python_interpreter: "{{ freezer_service_setup_host_python_interpreter }}"
+    _service_project_name: "{{ freezer_service_project_name }}"
+    _service_region: "{{ freezer_service_region }}"
+    _project_domain: "{{ freezer_service_project_domain_name }}"
+    _service_users:
+      - name: "{{ freezer_service_user_name }}"
+        password: "{{ freezer_service_password }}"
+        role: "{{ freezer_role_name }}"
+        domain: "{{ freezer_service_user_domain_name }}"
+      - role: "project_mod"
+      - role: "project_admin"
+    _service_catalog:
+      - name: "{{ freezer_service_name }}"
+        type: "{{ freezer_service_type }}"
+        description: "{{ freezer_service_description }}"
+    _service_endpoints:
+      - interface: "public"
+        url: "{{ freezer_service_publicuri }}"
+        service: "{{ freezer_service_name }}"
+      - interface: "internal"
+        url: "{{ freezer_service_internaluri }}"
+        service: "{{ freezer_service_name }}"
+      - interface: "admin"
+        url: "{{ freezer_service_adminuri }}"
+        service: "{{ freezer_service_name }}"
+  when: _freezer_api_is_first_play_host
+  tags:
+    - freezer-config
+
+- name: Importing freezer_db_sync tasks
+  ansible.builtin.include_tasks: freezer_db_sync.yml
+  args:
+    apply:
+      tags:
+        - freezer-config
+  when: _freezer_api_is_first_play_host
+  tags:
+    - freezer-config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,27 @@
+[DEFAULT]
+
+debug = {{ debug }}
+use_journal = True
+use_stderr = False
+
+client_id = {{ ansible_facts['nodename'] }}
+conf = {{ freezer_scheduler_jobs_dir }}
+enable_v1_api = False
+
+# Allow Freezer Scheduler to deny jobs that execute commands for security
+# reasons (boolean value)
+#disable_exec = false
+
+# Number of jobs that can be executed at the same time (integer value)
+#concurrent_jobs = 1
+
+
+insecure = {{ keystone_service_internaluri_insecure | bool }}
+os_project_domain_name = {{ freezer_service_project_domain_name }}
+os_user_domain_name = {{ freezer_service_user_domain_name }}
+os_project_name = {{ freezer_service_project_name }}
+os_username = {{ freezer_service_user_name }}
+os_password = {{ freezer_service_password }}
+os_region_name = {{ freezer_service_region }}
+os_auth_url = {{ keystone_service_internalurl }}
+os_endpoint_type = {{ freezer_service_endpoint_type }}

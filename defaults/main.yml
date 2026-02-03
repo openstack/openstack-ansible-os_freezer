@@ -1,0 +1,144 @@
+---
+# Copyright 2021, Dmitriy Rabotyagov <noonedeadpunk@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+## Verbosity Options
+debug: false
+
+# Set the package install state for distribution packages
+# Options are 'present' and 'latest'
+freezer_package_state: "{{ package_state | default('latest') }}"
+
+freezer_etc_dir: /etc/freezer
+freezer_scheduler_jobs_dir: /etc/freezer/scheduler/conf.d
+freezer_service_user_name: freezer
+freezer_system_group_name: freezer
+freezer_system_user_name: freezer
+freezer_system_comment: freezer system user
+freezer_system_shell: /bin/false
+freezer_system_home_folder: "/var/lib/{{ freezer_system_user_name }}"
+
+freezer_venv_tag: "{{ venv_tag | default('untagged') }}"
+freezer_bin: "/openstack/venvs/freezer-{{ freezer_venv_tag }}/bin"
+
+freezer_api_git_repo: https://opendev.org/openstack/freezer-api
+freezer_api_git_install_branch: master
+freezer_scheduler_git_repo: https://opendev.org/openstack/freezer
+freezer_scheduler_git_install_branch: master
+freezer_upper_constraints_url: >-
+  {{ requirements_git_url | default('https://releases.openstack.org/constraints/upper/' ~ requirements_git_install_branch | default('master')) }}
+freezer_git_constraints:
+  - "--constraint {{ freezer_upper_constraints_url }}"
+
+freezer_pip_install_args: "{{ pip_install_options | default('') }}"
+freezer_venv_python_executable: "{{ openstack_venv_python_executable | default('python3') }}"
+freezer_api_pip_packages:
+  - "freezer-api@git+{{ freezer_api_git_repo }}@{{ freezer_api_git_install_branch }}"
+  - cryptography
+  - PyMySQL
+  - python-memcached
+  - systemd-python
+  - sqlalchemy
+
+freezer_scheduler_pip_packages:
+  - "freezer@git+{{ freezer_scheduler_git_repo }}@{{ freezer_scheduler_git_install_branch }}"
+  - cryptography
+  - systemd-python
+
+freezer_api_core_files: "{{ _freezer_api_core_files }}"
+
+# DB settings
+freezer_galera_address: "{{ galera_address | default('127.0.0.1') }}"
+freezer_galera_database: freezer
+freezer_galera_user: freezer
+freezer_galera_use_ssl: "{{ galera_use_ssl | default(false) }}"
+freezer_galera_ssl_ca_cert: "{{ galera_ssl_ca_cert | default('/etc/ssl/certs/galera-ca.pem') }}"
+freezer_galera_port: "{{ galera_port | default('3306') }}"
+freezer_galera_setup_host: "{{ openstack_db_setup_host | default('localhost') }}"
+freezer_galera_setup_python_interpreter: >-
+  {{
+    openstack_db_setup_python_interpreter | default(
+      (freezer_galera_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable']))
+  }}
+
+freezer_memcached_servers: "{{ memcached_servers }}"
+
+## Service Type and Data
+freezer_role_name: admin
+freezer_service_region: "{{ service_region | default('RegionOne') }}"
+freezer_service_name: freezer
+freezer_service_type: backup
+freezer_service_description: "Freezer Backup Service"
+freezer_service_user_domain_name: Default
+freezer_service_project_domain_name: Default
+freezer_api_bind_address: "{{ openstack_service_bind_address | default('0.0.0.0') }}"
+freezer_api_service_port: 9090
+freezer_service_project_name: service
+freezer_service_in_ldap: "{{ service_ldap_backend_enabled | default(false) }}"
+freezer_service_setup_host: "{{ openstack_service_setup_host | default('localhost') }}"
+freezer_service_setup_host_python_interpreter: >-
+  {{
+    openstack_service_setup_host_python_interpreter | default(
+      (freezer_service_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_python['executable']))
+  }}
+freezer_service_proto: http
+freezer_service_publicuri_proto: "{{ openstack_service_publicuri_proto | default(freezer_service_proto) }}"
+freezer_service_adminuri_proto: "{{ openstack_service_adminuri_proto | default(freezer_service_proto) }}"
+freezer_service_internaluri_proto: "{{ openstack_service_internaluri_proto | default(freezer_service_proto) }}"
+freezer_service_publicuri: "{{ freezer_service_publicuri_proto }}://{{ external_lb_vip_address }}:{{ freezer_api_service_port }}"
+freezer_service_adminuri: "{{ freezer_service_adminuri_proto }}://{{ internal_lb_vip_address }}:{{ freezer_api_service_port }}"
+freezer_service_internaluri: "{{ freezer_service_internaluri_proto }}://{{ internal_lb_vip_address }}:{{ freezer_api_service_port }}"
+freezer_service_endpoint_type: internal
+freezer_keystone_auth_plugin: password
+
+# List of roles for which service tokens will be accepted
+freezer_service_token_roles:
+  - service
+freezer_service_token_roles_required: "{{ openstack_service_token_roles_required | default(True) }}"
+
+# uWSGI settings
+freezer_wsgi_threads: 1
+freezer_wsgi_processes_max: 16
+freezer_wsgi_processes: >-
+  {{ [[(ansible_facts['processor_vcpus'] // ansible_facts['processor_threads_per_core']) | default(1), 1] | max * 2, freezer_wsgi_processes_max] | min }}
+freezer_use_uwsgi: true
+
+# Config overrides
+freezer_api_conf_overrides: {}
+freezer_api_policy_overrides: {}
+freezer_api_uwsgi_ini_overrides: {}
+freezer_api_init_overrides: {}
+freezer_paste_ini_overrides: {}
+freezer_scheduler_conf_overrides: {}
+freezer_scheduler_init_overrides: {}
+
+## Service Name-Group Mapping
+freezer_services:
+  freezer-api:
+    group: freezer_api
+    service_name: freezer-api
+    service_enabled: true
+    init_config_overrides: "{{ freezer_api_init_overrides }}"
+    execstarts: "{{ freezer_bin }}/freezer-api"
+    wsgi_app: "{{ freezer_use_uwsgi }}"
+    wsgi: freezer_api.wsgi:application
+    uwsgi_overrides: "{{ freezer_api_uwsgi_ini_overrides }}"
+    uwsgi_bind_address: "{{ freezer_api_bind_address }}"
+    uwsgi_port: "{{ freezer_api_service_port }}"
+  freezer-scheduler:
+    group: freezer_scheduler
+    service_name: freezer-scheduler
+    service_enabled: true
+    init_config_overrides: "{{ freezer_scheduler_init_overrides }}"
+    execstarts: "{{ freezer_bin }}/freezer-scheduler --no-daemon --config-file {{ freezer_etc_dir }}/scheduler.conf start"

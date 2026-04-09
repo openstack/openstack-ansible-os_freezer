@@ -72,6 +72,29 @@
     - freezer-config
     - uwsgi
 
+- name: Create and install SSL certificates
+  ansible.builtin.include_role:
+    name: pki
+    tasks_from: main_certs.yml
+    apply:
+      tags:
+        - freezer-config
+        - pki
+  vars:
+    pki_backend: "{{ freezer_api_pki_backend }}"
+    pki_setup_host: "{{ freezer_api_pki_setup_host }}"
+    pki_dir: "{{ freezer_api_pki_dir }}"
+    pki_create_certificates: "{{ freezer_api_user_ssl_cert | length == 0 and freezer_api_user_ssl_key | length == 0 }}"
+    pki_regen_cert: "{{ freezer_api_pki_regen_cert }}"
+    pki_certificates: "{{ freezer_api_pki_certificates }}"
+    pki_install_certificates: "{{ freezer_api_pki_install_certificates }}"
+  when:
+    - freezer_backend_ssl | bool
+    - freezer_services['freezer-api']['group'] in group_names
+    - inventory_hostname in groups[freezer_services['freezer-api']['group']]
+  tags:
+    - always
+
 - name: Importing freezer_post_install tasks
   ansible.builtin.import_tasks: freezer_post_install.yml
   tags:

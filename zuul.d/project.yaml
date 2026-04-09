@@ -18,5 +18,6 @@
       - check-requirements
       - openstack-ansible-linters-jobs
       - openstack-ansible-deploy-aio_lxc-jobs
+      - openstack-ansible-deploy-aio_tls-jobs
       - publish-openstack-docs-pti
       - build-release-notes-jobs-python3

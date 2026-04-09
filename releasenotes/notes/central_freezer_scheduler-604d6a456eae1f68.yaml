@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Added support for deployment of Freezer Scheduler in central mode.
+    This introduces also a series of variables to control and manage
+    Freezer Scheduler capabilities.
+    Central mode is being enabled by default.

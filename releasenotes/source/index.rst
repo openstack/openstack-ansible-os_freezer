@@ -1,6 +1,6 @@
-========================================
- OpenStack-Ansible Freezer Release Notes
-========================================
+=======================================
+OpenStack-Ansible Freezer Release Notes
+=======================================
 
 .. toctree::
    :maxdepth: 1

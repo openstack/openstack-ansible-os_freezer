@@ -113,6 +113,9 @@ freezer_wsgi_processes_max: 16
 freezer_wsgi_processes: >-
   {{ [[(ansible_facts['processor_vcpus'] // ansible_facts['processor_threads_per_core']) | default(1), 1] | max * 2, freezer_wsgi_processes_max] | min }}
 freezer_use_uwsgi: true
+freezer_uwsgi_tls:
+  crt: "{{ freezer_api_ssl_cert }}"
+  key: "{{ freezer_api_ssl_key }}"
 
 # Config overrides
 freezer_api_conf_overrides: {}
@@ -136,9 +139,65 @@ freezer_services:
     uwsgi_overrides: "{{ freezer_api_uwsgi_ini_overrides }}"
     uwsgi_bind_address: "{{ freezer_api_bind_address }}"
     uwsgi_port: "{{ freezer_api_service_port }}"
+    uwsgi_tls: "{{ freezer_backend_ssl | ternary(freezer_uwsgi_tls, {}) }}"
   freezer-scheduler:
     group: freezer_scheduler
     service_name: freezer-scheduler
     service_enabled: true
     init_config_overrides: "{{ freezer_scheduler_init_overrides }}"
     execstarts: "{{ freezer_bin }}/freezer-scheduler --no-daemon --config-file {{ freezer_etc_dir }}/scheduler.conf start"
+
+###
+### Backend TLS
+###
+
+# Define if communication between haproxy and service backends should be
+# encrypted with TLS.
+freezer_backend_ssl: "{{ openstack_service_backend_ssl | default(false) }}"
+
+# Storage location for SSL certificate authority
+freezer_api_pki_dir: "{{ openstack_pki_dir | default('/etc/openstack_deploy/pki') }}"
+
+# Delegated host for operating the certificate authority
+freezer_api_pki_setup_host: "{{ openstack_pki_setup_host | default('localhost') }}"
+
+# freezer_api server certificate
+freezer_api_pki_keys_path: "{{ freezer_api_pki_dir ~ '/certs/private/' }}"
+freezer_api_pki_certs_path: "{{ freezer_api_pki_dir ~ '/certs/certs/' }}"
+freezer_api_pki_intermediate_cert_name: "{{ openstack_pki_service_intermediate_cert_name | default('ExampleCorpIntermediate') }}"
+freezer_api_pki_regen_cert: ""
+freezer_api_pki_san: "{{ openstack_pki_san | default({'dns': [ansible_facts['hostname']], 'ip': [management_address]}) }}"
+freezer_api_pki_backend: "{{ openstack_pki_backend | default('standalone') }}"
+
+freezer_api_pki_certificates:
+  - name: "freezer_api_{{ ansible_facts['hostname'] }}"
+    cn: "{{ ansible_facts['hostname'] }}"
+    san: "{{ freezer_api_pki_san }}"
+    # standalone backend only
+    provider: ownca
+    signed_by: "{{ freezer_api_pki_intermediate_cert_name }}"
+
+# freezer_api destination files for SSL certificates
+freezer_api_ssl_cert: /etc/freezer/freezer_api.pem
+freezer_api_ssl_key: /etc/freezer/freezer_api.key
+
+# Installation details for SSL certificates
+freezer_api_pki_install_certificates:
+  - name: "freezer_api_{{ ansible_facts['hostname'] }}"
+    type: "certificate_chain"
+    dest: "{{ freezer_api_ssl_cert }}"
+    owner: "{{ freezer_service_user_name }}"
+    group: "{{ freezer_system_group_name }}"
+    # standalone backend only
+    src: "{{ freezer_api_user_ssl_cert }}"
+  - name: "freezer_api_{{ ansible_facts['hostname'] }}"
+    type: "private_key"
+    dest: "{{ freezer_api_ssl_key }}"
+    owner: "{{ freezer_service_user_name }}"
+    group: "{{ freezer_system_group_name }}"
+    # standalone backend only
+    src: "{{ freezer_api_user_ssl_key }}"
+
+# Define user-provided SSL certificates
+freezer_api_user_ssl_cert: ""
+freezer_api_user_ssl_key: ""

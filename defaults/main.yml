@@ -136,7 +136,7 @@ freezer_service_token_roles:
   - service
 freezer_service_token_roles_required: "{{ openstack_service_token_roles_required | default(True) }}"
 
-# uWSGI settings
+# Freezer uWSGI settings
 freezer_wsgi_threads: 1
 freezer_wsgi_processes_max: 16
 freezer_wsgi_processes: >-

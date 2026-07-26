@@ -3,22 +3,19 @@ debug = {{ debug }}
 use_journal = True
 use_stderr = False
 
-client_id = {{ ansible_facts['nodename'] }}
-conf = {{ freezer_scheduler_jobs_dir }}
 enable_v1_api = False
 
-# Allow Freezer Scheduler to deny jobs that execute commands for security
-# reasons (boolean value)
-#disable_exec = false
-
-# Number of jobs that can be executed at the same time (integer value)
-#concurrent_jobs = 1
 
 [capabilities]
 supported_actions = {{ freezer_scheduler_actions | select | join(',') }}
 supported_modes = {{ freezer_scheduler_modes | select | join(',') }}
 supported_storages = {{ freezer_scheduler_storages | select | join(',') }}
 supported_engines = {{ freezer_scheduler_engines | select | join(',') }}
+
+{% if freezer_scheduler_coordination_enable %}
+[coordination]
+backend_url = {{ freezer_scheduler_coordination_url }}
+{% endif %}
 
 [scheduler]
 centralized_scheduler = {{ freezer_scheduler_central | bool }}

@@ -24,7 +24,7 @@ freezer_etc_dir: /etc/freezer
 
 # Freezer Scheduler configuration
 freezer_scheduler_central: true
-freezer_scheduler_client_id: "{{ ansible_facts['nodename'] }}"
+freezer_scheduler_client_id: "{{ freezer_scheduler_coordination_enable | bool | ternary('freezer-central', ansible_facts['nodename']) }}"
 freezer_scheduler_cinder_backup_enabled: "{{ cinder_service_backup_program_enabled | default(false) }}"
 freezer_scheduler_jobs_dir: /etc/freezer/scheduler/conf.d
 freezer_scheduler_jobs_max: 16
@@ -49,6 +49,20 @@ freezer_scheduler_engines:
   - nova
   - osbrick
   - glance
+
+## Freezer Scheduler Coordination
+freezer_scheduler_coordination_driver: "{{ coordination_driver | default('zookeeper') }}"
+freezer_scheduler_coordination_group: "{{ coordination_host_group | default('zookeeper_all') }}"
+freezer_scheduler_coordination_enable: >-
+  {{
+    freezer_scheduler_central and (
+      freezer_scheduler_coordination_group in groups and groups[freezer_scheduler_coordination_group] | length > 0)
+  }}
+freezer_scheduler_coordination_namespace: freezer
+freezer_scheduler_coordination_client_ssl: "{{ coordination_client_ssl | default(False) }}"
+freezer_scheduler_coordination_verify_cert: "{{ coordination_verify_cert | default(True) }}"
+freezer_scheduler_coordination_port: "{{ coordination_port | default(freezer_scheduler_coordination_client_ssl | ternary('2281', '2181')) }}"
+freezer_scheduler_coordination_url: "{{ _freezer_scheduler_coordination_url | default() }}"
 
 # OpenStack service configuration
 freezer_service_user_name: freezer
@@ -82,6 +96,7 @@ freezer_api_pip_packages:
 
 freezer_scheduler_pip_packages:
   - "freezer@git+{{ freezer_scheduler_git_repo }}@{{ freezer_scheduler_git_install_branch }}"
+  - "tooz[{{ freezer_scheduler_coordination_driver }}]"
   - cryptography
   - systemd-python
 

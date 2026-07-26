@@ -19,6 +19,15 @@ _freezer_api_is_first_play_host: >-
       inventory_hostname == (groups[freezer_services['freezer-api']['group']] |select('in', ansible_play_hosts)) | first) | bool
   }}
 
+_freezer_scheduler_coordination_url: >-
+  {{ freezer_scheduler_coordination_driver }}://{{
+      groups[freezer_scheduler_coordination_group]
+        | map('extract', hostvars, 'ansible_host')
+        | list | join(':' ~ freezer_scheduler_coordination_port ~ ',')
+    }}:{{ freezer_scheduler_coordination_port -}}
+    ?namespace={{ freezer_scheduler_coordination_namespace }}{% if freezer_scheduler_coordination_client_ssl | bool -%}
+    &use_ssl=True&verify_certs={{ freezer_scheduler_coordination_verify_cert | bool }}{% endif %}
+
 freezer_devel_distro_packages: |-
   {% set packages = [] %}
   {% if freezer_services['freezer-api']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-api']['group']] %}

@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    Added series of variables with names like ``freezer_scheduler_coordination_*``
+    which aim to add coordination support to ``freezer-scheduler``.
+upgrade:
+  - |
+    In case ``freezer_scheduler_coordination_enable`` is set to ``true``
+    (default, if zookeeper is present in deployment), freezer-scheduler ID must
+    be the same across all containers.
+    This is controlled by ``freezer_scheduler_client_id`` variable, which may
+    change during upgrade, making previously defined jobs unavailable, as no process
+    will be running with prior client id.

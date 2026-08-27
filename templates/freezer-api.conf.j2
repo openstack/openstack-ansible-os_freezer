@@ -9,7 +9,11 @@ bind_host = {{ freezer_api_bind_address }}
 bind_port = {{ freezer_api_service_port }}
 {% endif %}
 
-enable_v1_api = False
+[centralized_scheduler]
+enabled = {{ freezer_scheduler_central | bool }}
+enforce_trusts = False
+service_user = {{ freezer_service_user_name }}
+service_user_domain = {{ freezer_service_user_domain_name }}
 
 [database]
 connection = mysql+pymysql://{{ freezer_galera_user }}:{{ freezer_galera_password }}@{{ freezer_galera_address }}/{{ freezer_galera_database }}?charset=utf8{% if freezer_galera_use_ssl | bool %}&ssl_verify_cert=true{% if freezer_galera_ssl_ca_cert | length > 0 %}&ssl_ca={{ freezer_galera_ssl_ca_cert }}{% endif %}{% endif +%}

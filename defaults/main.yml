@@ -21,7 +21,36 @@ debug: false
 freezer_package_state: "{{ package_state | default('latest') }}"
 
 freezer_etc_dir: /etc/freezer
+
+# Freezer Scheduler configuration
+freezer_scheduler_central: true
+freezer_scheduler_client_id: "{{ ansible_facts['nodename'] }}"
+freezer_scheduler_cinder_backup_enabled: "{{ cinder_service_backup_program_enabled | default(false) }}"
 freezer_scheduler_jobs_dir: /etc/freezer/scheduler/conf.d
+freezer_scheduler_jobs_max: 16
+freezer_scheduler_concurrent_jobs: >-
+  {{ [[(ansible_facts['processor_vcpus'] // ansible_facts['processor_threads_per_core']) | default(1), 1] | max * 2, freezer_scheduler_jobs_max] | min }}
+
+freezer_scheduler_actions:
+  - admin
+  - backup
+  - restore
+  - info
+
+freezer_scheduler_modes:
+  - cinder
+  - "{{ freezer_scheduler_cinder_backup_enabled | ternary('cindernative', '') }}"
+  - glance
+  - nova
+
+freezer_scheduler_storages: []
+
+freezer_scheduler_engines:
+  - nova
+  - osbrick
+  - glance
+
+# OpenStack service configuration
 freezer_service_user_name: freezer
 freezer_system_group_name: freezer
 freezer_system_user_name: freezer
@@ -139,7 +168,7 @@ freezer_services:
     uwsgi_overrides: "{{ freezer_api_uwsgi_ini_overrides }}"
     uwsgi_bind_address: "{{ freezer_api_bind_address }}"
     uwsgi_port: "{{ freezer_api_service_port }}"
-    uwsgi_tls: "{{ freezer_backend_ssl | ternary(freezer_uwsgi_tls, {}) }}"
+    uwsgi_tls: "{{ freezer_api_backend_ssl | ternary(freezer_uwsgi_tls, {}) }}"
   freezer-scheduler:
     group: freezer_scheduler
     service_name: freezer-scheduler
@@ -153,7 +182,7 @@ freezer_services:
 
 # Define if communication between haproxy and service backends should be
 # encrypted with TLS.
-freezer_backend_ssl: "{{ openstack_service_backend_ssl | default(false) }}"
+freezer_api_backend_ssl: "{{ openstack_service_backend_ssl | default(false) }}"
 
 # Storage location for SSL certificate authority
 freezer_api_pki_dir: "{{ openstack_pki_dir | default('/etc/openstack_deploy/pki') }}"
@@ -178,8 +207,8 @@ freezer_api_pki_certificates:
     signed_by: "{{ freezer_api_pki_intermediate_cert_name }}"
 
 # freezer_api destination files for SSL certificates
-freezer_api_ssl_cert: /etc/freezer/freezer_api.pem
-freezer_api_ssl_key: /etc/freezer/freezer_api.key
+freezer_api_ssl_cert: /etc/freezer_api/freezer_api.pem
+freezer_api_ssl_key: /etc/freezer_api/freezer_api.key
 
 # Installation details for SSL certificates
 freezer_api_pki_install_certificates:

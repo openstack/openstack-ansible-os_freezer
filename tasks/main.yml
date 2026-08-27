@@ -89,7 +89,7 @@
     pki_certificates: "{{ freezer_api_pki_certificates }}"
     pki_install_certificates: "{{ freezer_api_pki_install_certificates }}"
   when:
-    - freezer_backend_ssl | bool
+    - freezer_api_backend_ssl | bool
     - freezer_services['freezer-api']['group'] in group_names
     - inventory_hostname in groups[freezer_services['freezer-api']['group']]
   tags:

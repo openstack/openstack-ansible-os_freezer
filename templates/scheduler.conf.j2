@@ -1,5 +1,4 @@
 [DEFAULT]
-
 debug = {{ debug }}
 use_journal = True
 use_stderr = False
@@ -15,13 +14,27 @@ enable_v1_api = False
 # Number of jobs that can be executed at the same time (integer value)
 #concurrent_jobs = 1
 
+[capabilities]
+supported_actions = {{ freezer_scheduler_actions | select | join(',') }}
+supported_modes = {{ freezer_scheduler_modes | select | join(',') }}
+supported_storages = {{ freezer_scheduler_storages | select | join(',') }}
+supported_engines = {{ freezer_scheduler_engines | select | join(',') }}
 
+[scheduler]
+centralized_scheduler = {{ freezer_scheduler_central | bool }}
+client_id = {{ freezer_scheduler_client_id }}
+jobs_dir = {{ freezer_scheduler_jobs_dir }}
+concurrent_jobs = {{ freezer_scheduler_concurrent_jobs }}
 insecure = {{ keystone_service_internaluri_insecure | bool }}
-os_project_domain_name = {{ freezer_service_project_domain_name }}
-os_user_domain_name = {{ freezer_service_user_domain_name }}
-os_project_name = {{ freezer_service_project_name }}
-os_username = {{ freezer_service_user_name }}
-os_password = {{ freezer_service_password }}
-os_region_name = {{ freezer_service_region }}
+disable_exec = {{ freezer_scheduler_central | bool }}
+
+[service_auth]
+insecure = {{ keystone_service_internaluri_insecure | bool }}
 os_auth_url = {{ keystone_service_internalurl }}
 os_endpoint_type = {{ freezer_service_endpoint_type }}
+os_password = {{ freezer_service_password }}
+os_project_domain_name = {{ freezer_service_project_domain_name }}
+os_project_name = {{ freezer_service_project_name }}
+os_region_name = {{ freezer_service_region }}
+os_user_domain_name = {{ freezer_service_user_domain_name }}
+os_username = {{ freezer_service_user_name }}

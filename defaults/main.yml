@@ -151,6 +151,7 @@ freezer_api_conf_overrides: {}
 freezer_api_policy_overrides: {}
 freezer_api_uwsgi_ini_overrides: {}
 freezer_api_init_overrides: {}
+freezer_conf_overrides: {}
 freezer_paste_ini_overrides: {}
 freezer_scheduler_conf_overrides: {}
 freezer_scheduler_init_overrides: {}

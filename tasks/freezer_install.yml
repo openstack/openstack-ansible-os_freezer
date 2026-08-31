@@ -13,20 +13,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Install the python venv
-  ansible.builtin.import_role:
+- name: Install the python venv for freezer-api
+  ansible.builtin.include_role:
     name: "python_venv_build"
+    apply:
+      tags:
+        - freezer-install
   vars:
     venv_python_executable: "{{ freezer_venv_python_executable }}"
     venv_build_constraints: "{{ freezer_git_constraints }}"
-    venv_install_destination_path: "{{ freezer_bin | dirname }}"
-    venv_install_distro_package_list: "{{ freezer_install_distro_packages }}"
-    venv_build_distro_package_list: "{{ freezer_devel_distro_packages }}"
+    venv_install_destination_path: "{{ freezer_api_bin | dirname }}"
+    venv_build_distro_package_list: "{{ freezer_api_devel_distro_packages }}"
     venv_pip_install_args: "{{ freezer_pip_install_args }}"
-    venv_pip_packages: "{{ freezer_pip_packages }}"
+    venv_pip_packages: "{{ freezer_api_pip_packages }}"
     venv_facts_when_changed:
       - section: "freezer"
         option: "venv_tag"
         value: "{{ freezer_venv_tag }}"
+  when:
+    - freezer_services['freezer-api']['group'] in group_names
+  tags:
+    - freezer-install
+
+- name: Install the python venv for freezer-scheduler
+  ansible.builtin.include_role:
+    name: "python_venv_build"
+    apply:
+      tags:
+        - freezer-install
+  vars:
+    venv_python_executable: "{{ freezer_venv_python_executable }}"
+    venv_build_constraints: "{{ freezer_git_constraints }}"
+    venv_install_destination_path: "{{ freezer_scheduler_bin | dirname }}"
+    venv_install_distro_package_list: "{{ freezer_scheduler_distro_packages }}"
+    venv_build_distro_package_list: "{{ freezer_scheduler_devel_distro_packages }}"
+    venv_pip_install_args: "{{ freezer_pip_install_args }}"
+    venv_pip_packages: "{{ freezer_scheduler_pip_packages }}"
+    venv_facts_when_changed:
+      - section: "freezer"
+        option: "venv_tag"
+        value: "{{ freezer_venv_tag }}"
+  when:
+    - freezer_services['freezer-scheduler']['group'] in group_names
   tags:
     - freezer-install

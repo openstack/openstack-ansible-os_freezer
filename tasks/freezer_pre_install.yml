@@ -39,13 +39,23 @@
     group: "{{ item.group | default(freezer_system_group_name) }}"
     mode: "{{ item.mode | default('0755') }}"
     force: "{{ item.force | default(omit) }}"
+  vars:
+    _freezer_bin: |-
+      {% set _bin_path = '' %}
+      {% if freezer_services['freezer-api']['group'] in group_names %}
+      {%   set _bin_path = freezer_api_bin %}
+      {% endif %}
+      {% if freezer_services['freezer-scheduler']['group'] in group_names %}
+      {%   set _bin_path = freezer_scheduler_bin %}
+      {% endif %}
+      {{ _bin_path }}
   with_items:
     - path: "/openstack"
       mode: "0755"
       owner: "root"
       group: "root"
     - dest: "{{ freezer_etc_dir }}"
-      src: "{{ freezer_bin | dirname | regex_replace('^/', '../') }}/etc/freezer"
+      src: "{{ _freezer_bin | dirname | regex_replace('^/', '../') }}/etc/freezer"
       state: link
       force: true
-    - path: "{{ freezer_bin | dirname | regex_replace('^/', '../') }}{{ freezer_scheduler_jobs_dir }}"
+    - path: "{{ _freezer_bin | dirname | regex_replace('^/', '../') }}{{ freezer_scheduler_jobs_dir }}"

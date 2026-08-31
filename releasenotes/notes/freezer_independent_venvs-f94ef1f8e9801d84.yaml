@@ -1,0 +1,10 @@
+---
+
+upgrade:
+  - |
+    Freezer API and Freezer Scheduler use differently named venvs from now on.
+fixes:
+  - |
+    Freezer API and Scheduler used to share same venv name while relying on
+    different packages, making ``python_venv_build`` break idempotency.
+    This was resulting on venv rebuild without need and service restart.

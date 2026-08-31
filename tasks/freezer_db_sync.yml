@@ -14,7 +14,7 @@
 # limitations under the License.
 
 - name: Perform a freezer DB sync
-  ansible.builtin.command: "{{ freezer_bin }}/freezer-manage db sync"
+  ansible.builtin.command: "{{ freezer_api_bin }}/freezer-manage db sync"
   become: true
   become_user: "{{ freezer_system_user_name }}"
   changed_when: false

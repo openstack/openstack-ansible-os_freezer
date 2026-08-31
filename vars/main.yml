@@ -28,33 +28,6 @@ _freezer_scheduler_coordination_url: >-
     ?namespace={{ freezer_scheduler_coordination_namespace }}{% if freezer_scheduler_coordination_client_ssl | bool -%}
     &use_ssl=True&verify_certs={{ freezer_scheduler_coordination_verify_cert | bool }}{% endif %}
 
-freezer_devel_distro_packages: |-
-  {% set packages = [] %}
-  {% if freezer_services['freezer-api']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-api']['group']] %}
-  {% set _ = packages.extend(freezer_api_devel_distro_packages) %}
-  {% endif %}
-  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
-  {% set _ = packages.extend(freezer_scheduler_devel_distro_packages) %}
-  {% endif %}
-  {{ packages }}
-
-freezer_install_distro_packages: |-
-  {% set packages = [] %}
-  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
-  {% set _ = packages.extend(freezer_scheduler_distro_packages) %}
-  {% endif %}
-  {{ packages }}
-
-freezer_pip_packages: |-
-  {% set packages = [] %}
-  {% if freezer_services['freezer-api']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-api']['group']] %}
-  {% set _ = packages.extend(freezer_api_pip_packages) %}
-  {% endif %}
-  {% if freezer_services['freezer-scheduler']['group'] in group_names and inventory_hostname in groups[freezer_services['freezer-scheduler']['group']] %}
-  {% set _ = packages.extend(freezer_scheduler_pip_packages) %}
-  {% endif %}
-  {{ packages }}
-
 filtered_freezer_services: |-
   {% set services = [] %}
   {% for key, value in freezer_services.items() %}
@@ -76,7 +49,7 @@ uwsgi_freezer_services: |-
          and ('wsgi_app' in value and value['wsgi_app']) %}
   {%     set _ = value.update(
            {
-             'wsgi_venv': freezer_bin | dirname,
+             'wsgi_venv': freezer_api_bin | dirname,
              'uwsgi_uid': freezer_system_user_name,
              'uwsgi_guid': freezer_system_group_name,
              'uwsgi_processes': freezer_wsgi_processes,

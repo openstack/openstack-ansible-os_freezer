@@ -99,6 +99,7 @@
   ansible.builtin.import_tasks: freezer_post_install.yml
   tags:
     - freezer-config
+    - post-install
 
 - name: Run the systemd service role
   ansible.builtin.include_role:

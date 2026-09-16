@@ -5,9 +5,6 @@ debug = {{ debug }}
 use_journal = True
 use_stderr = False
 
-enable_v1_api = False
-
-
 [capabilities]
 supported_actions = {{ freezer_scheduler_actions | select | join(',') }}
 supported_modes = {{ freezer_scheduler_modes | select | join(',') }}

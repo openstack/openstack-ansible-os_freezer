@@ -26,7 +26,7 @@ freezer_etc_dir: /etc/freezer
 freezer_scheduler_central: true
 freezer_scheduler_client_id: "{{ freezer_scheduler_coordination_enable | bool | ternary('freezer-central', ansible_facts['nodename']) }}"
 freezer_scheduler_cinder_backup_enabled: "{{ cinder_service_backup_program_enabled | default(false) }}"
-freezer_scheduler_jobs_dir: /etc/freezer/scheduler/conf.d
+freezer_scheduler_jobs_dir: "{{ freezer_system_home_folder }}/jobs"
 freezer_scheduler_jobs_max: 16
 freezer_scheduler_concurrent_jobs: >-
   {{ [[(ansible_facts['processor_vcpus'] // ansible_facts['processor_threads_per_core']) | default(1), 1] | max * 2, freezer_scheduler_jobs_max] | min }}

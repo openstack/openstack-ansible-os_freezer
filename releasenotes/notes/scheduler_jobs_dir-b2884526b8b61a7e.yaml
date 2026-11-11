@@ -1,0 +1,11 @@
+---
+
+upgrade:
+  - |
+    Default value for ``freezer_scheduler_jobs_dir`` has been changed from
+    dynamicaly symlinked /etc/freezer/scheduler/conf.d to a more statically
+    defined ``/var/lib/freezer/jobs``.
+fixes:
+  - |
+    Freezer Scheduler no longer fails on startup after role is run with
+    ``venv_rebuild: true`` due to missing jobs folder.

@@ -49,13 +49,16 @@
       {%   set _bin_path = freezer_scheduler_bin %}
       {% endif %}
       {{ _bin_path }}
+  when:
+    - item.condition | default(true)
   with_items:
     - path: "/openstack"
       mode: "0755"
       owner: "root"
       group: "root"
     - dest: "{{ freezer_etc_dir }}"
-      src: "{{ _freezer_bin | dirname | regex_replace('^/', '../') }}/etc/freezer"
+      src: "{{ _freezer_bin | dirname | regex_replace('^/', '../') }}{{ freezer_etc_dir }}"
       state: link
       force: true
-    - path: "{{ _freezer_bin | dirname | regex_replace('^/', '../') }}{{ freezer_scheduler_jobs_dir }}"
+    - path: "{{ freezer_scheduler_jobs_dir }}"
+      condition: "{{ freezer_services['freezer-scheduler']['group'] in group_names }}"
